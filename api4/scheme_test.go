@@ -18,10 +18,7 @@ func TestCreateScheme(t *testing.T) {
 
 	th.App.SetLicense(model.NewTestLicense(""))
 
-	// Mark the migration as done.
-	<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = true
 
 	// Basic test of creating a team scheme.
 	scheme1 := &model.Scheme{
@@ -119,9 +116,7 @@ func TestCreateScheme(t *testing.T) {
 	_, r6 := th.SystemAdminClient.CreateScheme(scheme6)
 	CheckNotImplementedStatus(t, r6)
 
-	// Mark the migration as not done.
-	res = <-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	th.LoginSystemAdmin()
 	th.App.SetLicense(model.NewTestLicense(""))
@@ -148,12 +143,12 @@ func TestGetScheme(t *testing.T) {
 		Scope:       model.SCHEME_SCOPE_TEAM,
 	}
 
-	<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = true
 
 	s1, r1 := th.SystemAdminClient.CreateScheme(scheme1)
 	CheckNoError(t, r1)
+
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	assert.Equal(t, s1.Name, scheme1.Name)
 	assert.Equal(t, s1.Description, scheme1.Description)
@@ -215,14 +210,14 @@ func TestGetSchemes(t *testing.T) {
 		Scope:       model.SCHEME_SCOPE_CHANNEL,
 	}
 
-	<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = true
 
 	_, r1 := th.SystemAdminClient.CreateScheme(scheme1)
 	CheckNoError(t, r1)
 	_, r2 := th.SystemAdminClient.CreateScheme(scheme2)
 	CheckNoError(t, r2)
+
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	l3, r3 := th.SystemAdminClient.GetSchemes("", 0, 100)
 	CheckNoError(t, r3)
@@ -268,9 +263,7 @@ func TestGetTeamsForScheme(t *testing.T) {
 
 	th.App.SetLicense(model.NewTestLicense(""))
 
-	<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = true
 
 	scheme1 := &model.Scheme{
 		Name:        model.NewId(),
@@ -279,6 +272,8 @@ func TestGetTeamsForScheme(t *testing.T) {
 	}
 	scheme1, r1 := th.SystemAdminClient.CreateScheme(scheme1)
 	CheckNoError(t, r1)
+
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	team1 := &model.Team{
 		Name:        GenerateTestUsername(),
@@ -340,6 +335,8 @@ func TestGetTeamsForScheme(t *testing.T) {
 	_, ri4 := th.Client.GetTeamsForScheme(model.NewId(), 0, 100)
 	CheckForbiddenStatus(t, ri4)
 
+	th.App.Phase2PermissionsMigrationComplete = true
+
 	scheme2 := &model.Scheme{
 		Name:        model.NewId(),
 		Description: model.NewId(),
@@ -351,9 +348,7 @@ func TestGetTeamsForScheme(t *testing.T) {
 	_, ri5 := th.SystemAdminClient.GetTeamsForScheme(scheme2.Id, 0, 100)
 	CheckBadRequestStatus(t, ri5)
 
-	// Mark the migration as not done.
-	res = <-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	_, ri6 := th.SystemAdminClient.GetTeamsForScheme(scheme1.Id, 0, 100)
 	CheckNotImplementedStatus(t, ri6)
@@ -365,9 +360,7 @@ func TestGetChannelsForScheme(t *testing.T) {
 
 	th.App.SetLicense(model.NewTestLicense(""))
 
-	<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = true
 
 	scheme1 := &model.Scheme{
 		Name:        model.NewId(),
@@ -376,6 +369,8 @@ func TestGetChannelsForScheme(t *testing.T) {
 	}
 	scheme1, r1 := th.SystemAdminClient.CreateScheme(scheme1)
 	CheckNoError(t, r1)
+
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	channel1 := &model.Channel{
 		TeamId:      model.NewId(),
@@ -439,6 +434,8 @@ func TestGetChannelsForScheme(t *testing.T) {
 	_, ri4 := th.Client.GetChannelsForScheme(model.NewId(), 0, 100)
 	CheckForbiddenStatus(t, ri4)
 
+	th.App.Phase2PermissionsMigrationComplete = true
+
 	scheme2 := &model.Scheme{
 		Name:        model.NewId(),
 		Description: model.NewId(),
@@ -450,9 +447,7 @@ func TestGetChannelsForScheme(t *testing.T) {
 	_, ri5 := th.SystemAdminClient.GetChannelsForScheme(scheme2.Id, 0, 100)
 	CheckBadRequestStatus(t, ri5)
 
-	// Mark the migration as not done.
-	res = <-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	_, ri6 := th.SystemAdminClient.GetChannelsForScheme(scheme1.Id, 0, 100)
 	CheckNotImplementedStatus(t, ri6)
@@ -464,10 +459,7 @@ func TestPatchScheme(t *testing.T) {
 
 	th.App.SetLicense(model.NewTestLicense(""))
 
-	// Mark the migration as done.
-	<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = true
 
 	// Basic test of creating a team scheme.
 	scheme1 := &model.Scheme{
@@ -550,9 +542,7 @@ func TestPatchScheme(t *testing.T) {
 	_, r11 := th.SystemAdminClient.PatchScheme(s6.Id, schemePatch)
 	CheckNotImplementedStatus(t, r11)
 
-	// Mark the migration as not done.
-	res = <-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-	assert.Nil(t, res.Err)
+	th.App.Phase2PermissionsMigrationComplete = false
 
 	th.LoginSystemAdmin()
 	th.App.SetLicense(model.NewTestLicense(""))
@@ -568,16 +558,7 @@ func TestDeleteScheme(t *testing.T) {
 	t.Run("ValidTeamScheme", func(t *testing.T) {
 		th.App.SetLicense(model.NewTestLicense(""))
 
-		// Mark the migration as done.
-		<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-		res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-		assert.Nil(t, res.Err)
-
-		// Un-mark the migration at the end of the test.
-		defer func() {
-			res := <-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-			assert.Nil(t, res.Err)
-		}()
+		th.App.Phase2PermissionsMigrationComplete = true
 
 		// Create a team scheme.
 		scheme1 := &model.Scheme{
@@ -605,7 +586,7 @@ func TestDeleteScheme(t *testing.T) {
 		assert.Zero(t, role4.DeleteAt)
 
 		// Make sure this scheme is in use by a team.
-		res = <-th.App.Srv.Store.Team().Save(&model.Team{
+		res := <-th.App.Srv.Store.Team().Save(&model.Team{
 			Name:        model.NewId(),
 			DisplayName: model.NewId(),
 			Email:       model.NewId() + "@nowhere.com",
@@ -643,16 +624,7 @@ func TestDeleteScheme(t *testing.T) {
 	t.Run("ValidChannelScheme", func(t *testing.T) {
 		th.App.SetLicense(model.NewTestLicense(""))
 
-		// Mark the migration as done.
-		<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-		res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-		assert.Nil(t, res.Err)
-
-		// Un-mark the migration at the end of the test.
-		defer func() {
-			res := <-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-			assert.Nil(t, res.Err)
-		}()
+		th.App.Phase2PermissionsMigrationComplete = true
 
 		// Create a channel scheme.
 		scheme1 := &model.Scheme{
@@ -674,7 +646,7 @@ func TestDeleteScheme(t *testing.T) {
 		assert.Zero(t, role4.DeleteAt)
 
 		// Make sure this scheme is in use by a team.
-		res = <-th.App.Srv.Store.Channel().Save(&model.Channel{
+		res := <-th.App.Srv.Store.Channel().Save(&model.Channel{
 			TeamId:      model.NewId(),
 			DisplayName: model.NewId(),
 			Name:        model.NewId(),
@@ -706,10 +678,7 @@ func TestDeleteScheme(t *testing.T) {
 	t.Run("FailureCases", func(t *testing.T) {
 		th.App.SetLicense(model.NewTestLicense(""))
 
-		// Mark the migration as done.
-		<-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-		res := <-th.App.Srv.Store.System().Save(&model.System{Name: model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2, Value: "true"})
-		assert.Nil(t, res.Err)
+		th.App.Phase2PermissionsMigrationComplete = true
 
 		scheme1 := &model.Scheme{
 			Name:        model.NewId(),
@@ -737,9 +706,7 @@ func TestDeleteScheme(t *testing.T) {
 		_, r5 := th.SystemAdminClient.DeleteScheme(s1.Id)
 		CheckNotImplementedStatus(t, r5)
 
-		// Test with migration not being done.
-		res = <-th.App.Srv.Store.System().PermanentDeleteByName(model.MIGRATION_KEY_ADVANCED_PERMISSIONS_PHASE_2)
-		assert.Nil(t, res.Err)
+		th.App.Phase2PermissionsMigrationComplete = false
 
 		th.App.SetLicense(model.NewTestLicense(""))
 

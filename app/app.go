@@ -92,6 +92,8 @@ type App struct {
 	clientConfig     map[string]string
 	clientConfigHash string
 	diagnosticId     string
+
+	Phase2PermissionsMigrationComplete bool
 }
 
 var appCount = 0
